@@ -56,36 +56,75 @@ exports.authens = function (req, res, next) {
     }
 
 }
-exports.webhook = function (req, res) {
-    let reply_token = req.body.events[0].replyToken
-    console.log(reply_token)
-    reply(reply_token)
-    res.sendStatus(200)
-    function reply(reply_token) {
-        let headers = {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer {hARFCA91cauLzRqqXTzzoqI8uCJBWZtBlDozccC3uU52nQVc0zlJZ8MRGs/iL279T6FPtNJxO515Zd5MfjZA7VhDdUguuGIvb2kN6N1JgZ2zZJ/DRIqsGX7CaLjFV7C6fxOAVO+ZYryv83fSM9ZiMwdB04t89/1O/w1cDnyilFU=}'
-        }
-        let body = JSON.stringify({
-            replyToken: reply_token,
-            messages: [{
-                type: 'text',
-                text: 'Hello'
-            },
-            {
-                type: 'text',
-                text: 'How are you?'
-            }]
-        })
-        request.post({
-            url: 'https://api.line.me/v2/bot/message/reply',
-            headers: headers,
-            body: body
-        }, (err, res, body) => {
-            console.log('status = ' + res.statusCode);
-        });
+function insertuserid(userid) {
+    try {
+        const userId = db.query(`INSERT INTO user (useridline) VALUES ('${userid}')`);
+    } catch (err) {
+        console.log(err)
     }
 }
+
+function select(userid) {
+    try {
+        db.query(`SELECT * FROM user WHERE useridline= '${userid}'`,
+            db.query(`UPDATE user SET useridline= '${userid}' WHERE username ='IT0001'`,
+                function (err, results, fields) {
+                    console.log('Result', results);
+                    if (results.length === 0) {
+                        insertuserid(userid)
+
+                    }
+                }
+            )
+        );
+        // db.query(`UPDATE user SET nameid= '${nameid}' WHERE useridline ='${userid}'`,
+        //     function (err, results, fields) {
+        //         console.log('Result', results);
+        //         if (results.length === 0) {
+        //             insertuserid(nameid)
+        //         }
+        //     }
+        // );
+    } catch (err) {
+        console.log(err)
+    }
+}
+
+exports.webhook = function (req, res) {
+    let reply_token = req.body.events[0].source.userId
+    select(reply_token)
+    res.sendStatus(200)
+
+    // console.log(reply_token)
+    // reply(reply_token)
+    // function reply(reply_token) {
+    //     let headers = {
+    //         'Content-Type': 'application/json',
+    //         'Authorization': 'Bearer {hARFCA91cauLzRqqXTzzoqI8uCJBWZtBlDozccC3uU52nQVc0zlJZ8MRGs/iL279T6FPtNJxO515Zd5MfjZA7VhDdUguuGIvb2kN6N1JgZ2zZJ/DRIqsGX7CaLjFV7C6fxOAVO+ZYryv83fSM9ZiMwdB04t89/1O/w1cDnyilFU=}'
+    //     }
+    // let body = JSON.stringify({
+    //     replyToken: reply_token,
+    //     messages: [{
+    //         type: 'text',
+    //         text: 'Hello'
+    //     },
+    //     {
+    //         type: 'text',
+    //         text: 'How are you?'
+    //     }]
+    // })
+    // request.post({
+    //     url: 'https://api.line.me/v2/bot/message/reply',
+    //     headers: headers,
+    //     body: body
+    // }, (err, res, body) => {
+    //     console.log('status = ' + res.statusCode);
+    // });
+    // }
+}
+
+
+
 exports.applyloan = function (req, res, next) {
     try {
         cdb.execute("SELECT * FROM apply_loan",
@@ -101,6 +140,9 @@ exports.applyloan = function (req, res, next) {
         res.status(500).json({ error: err });
     }
 }
+
+
+
 exports.applyloanID = function (req, res, next) {
     try {
         const id = req.params.id;
