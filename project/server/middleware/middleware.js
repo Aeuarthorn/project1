@@ -5,6 +5,13 @@ var jwt = require('jsonwebtoken')
 const secret = 'secrettoken'
 const request = require('request')
 const cdb = require('../config/dbLoan')
+const https = require('https');
+const { profile } = require('console');
+const { link } = require('fs');
+const axios = require('axios');
+const { url } = require('inspector');
+const { ClientRequest } = require('http');
+const { query } = require('../config/db.config');
 
 
 
@@ -56,75 +63,6 @@ exports.authens = function (req, res, next) {
     }
 
 }
-function insertuserid(userid) {
-    try {
-        const userId = db.query(`INSERT INTO user (useridline) VALUES ('${userid}')`);
-    } catch (err) {
-        console.log(err)
-    }
-}
-
-function select(userid) {
-    try {
-        db.query(`SELECT * FROM user WHERE useridline= '${userid}'`,
-            db.query(`UPDATE user SET useridline= '${userid}' WHERE username ='IT0001'`,
-                function (err, results, fields) {
-                    console.log('Result', results);
-                    if (results.length === 0) {
-                        insertuserid(userid)
-
-                    }
-                }
-            )
-        );
-        // db.query(`UPDATE user SET nameid= '${nameid}' WHERE useridline ='${userid}'`,
-        //     function (err, results, fields) {
-        //         console.log('Result', results);
-        //         if (results.length === 0) {
-        //             insertuserid(nameid)
-        //         }
-        //     }
-        // );
-    } catch (err) {
-        console.log(err)
-    }
-}
-
-exports.webhook = function (req, res) {
-    let reply_token = req.body.events[0].source.userId
-    select(reply_token)
-    res.sendStatus(200)
-
-    // console.log(reply_token)
-    // reply(reply_token)
-    // function reply(reply_token) {
-    //     let headers = {
-    //         'Content-Type': 'application/json',
-    //         'Authorization': 'Bearer {hARFCA91cauLzRqqXTzzoqI8uCJBWZtBlDozccC3uU52nQVc0zlJZ8MRGs/iL279T6FPtNJxO515Zd5MfjZA7VhDdUguuGIvb2kN6N1JgZ2zZJ/DRIqsGX7CaLjFV7C6fxOAVO+ZYryv83fSM9ZiMwdB04t89/1O/w1cDnyilFU=}'
-    //     }
-    // let body = JSON.stringify({
-    //     replyToken: reply_token,
-    //     messages: [{
-    //         type: 'text',
-    //         text: 'Hello'
-    //     },
-    //     {
-    //         type: 'text',
-    //         text: 'How are you?'
-    //     }]
-    // })
-    // request.post({
-    //     url: 'https://api.line.me/v2/bot/message/reply',
-    //     headers: headers,
-    //     body: body
-    // }, (err, res, body) => {
-    //     console.log('status = ' + res.statusCode);
-    // });
-    // }
-}
-
-
-
 exports.applyloan = function (req, res, next) {
     try {
         cdb.execute("SELECT * FROM apply_loan",
@@ -140,9 +78,6 @@ exports.applyloan = function (req, res, next) {
         res.status(500).json({ error: err });
     }
 }
-
-
-
 exports.applyloanID = function (req, res, next) {
     try {
         const id = req.params.id;
@@ -159,24 +94,110 @@ exports.applyloanID = function (req, res, next) {
         res.status(500).json({ error: err });
     }
 };
-// exports.user = function (req, res, next) {
-//     const id = 'SELECT * FROM apply_loan WHERE id=?'
-//     cdb.execute(
-//         'SELECT id FROM apply_loan' + id,
-//             function (err, apply_loan, fields) {
-//                 if (err){
-//                     console.log(err)
-//                 }{
-//                     console.log(apply_loan)
-//                 }
-//                 // Object.keys(apply_loan).forEach(function (key) {
-//                 //     var row = apply_loan[key];
-//                 //     console.log(row.id)
-//                 // });
-//             }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//     );
-// }
+exports.webhook = function (req, res) {
+    let reply_token = req.body.events[0].source.userId
+    // select(reply_token)
+    sentline(reply_token)
+    res.sendStatus(200)
+
+}
+function sentline(reply_token) {
+    const line = require("@line/bot-sdk");
+    const client = new line.Client({
+        channelAccessToken: "hARFCA91cauLzRqqXTzzoqI8uCJBWZtBlDozccC3uU52nQVc0zlJZ8MRGs/iL279T6FPtNJxO515Zd5MfjZA7VhDdUguuGIvb2kN6N1JgZ2zZJ/DRIqsGX7CaLjFV7C6fxOAVO+ZYryv83fSM9ZiMwdB04t89/1O/w1cDnyilFU=",
+    });
+
+    client.getProfile(`${reply_token}`)
+        .then((profile) => {
+            database(profile)
+            // console.log('userId :', profile.userId);
+            // console.log('displayName :', profile.displayName);
+            // console.log('pictureUrl :', profile.pictureUrl);
+            // console.log('statusMessage :', profile.statusMessage);
+            // console.log('language :', profile.language);
+        })
+        .catch((err) => {
+            err
+        });
+
+}
+
+function database(profile) {
+    // const cut = profile.pictureUrl.substring(8, 300)
+    const userId = profile.userId
+    const displayName = profile.displayName
+    const pictureUrl = profile.pictureUrl
+    const statusMessage = profile.statusMessage
+    const language = profile.language
+    select(userId)
+    try {
+        db.query(`INSERT INTO dataline (userId, displayName, pictureUrl, statusMessage, language) VALUES ('${userId}', '${displayName}', '${pictureUrl}', '${statusMessage}', '${language}')`,
+            function (err, results, fields) {
+                sentline(profile)
+            }
+        )
+    } catch (err) {
+        console.log(err)
+    }
+}
+
+function select(userId) {
+    try {
+        db.query(`SELECT * FROM dataline WHERE userId = '${userId}'`,
+            function (err, results, fields) {
+                console.log('results', results)
+                if (results.length === 0) {
+                    database(userId)
+                }
+            }
+        )
+    } catch (err) {
+        console.log(err)
+    }
+}
+
+    // function select(reply_token) {
+    //     let headers = {
+    //         'Content-Type': 'application/json',
+    //         'Authorization': 'Bearer {hARFCA91cauLzRqqXTzzoqI8uCJBWZtBlDozccC3uU52nQVc0zlJZ8MRGs/iL279T6FPtNJxO515Zd5MfjZA7VhDdUguuGIvb2kN6N1JgZ2zZJ/DRIqsGX7CaLjFV7C6fxOAVO+ZYryv83fSM9ZiMwdB04t89/1O/w1cDnyilFU=}'
+    //     }
+    // let body = JSON.stringify({
+    //     replyToken: reply_token,
+    //     messages: [{
+    //         type: 'text',
+    //         text: 'Hello'
+    //     },
+    //     {
+    //         type: 'text',
+    //         text: 'How are you?'
+    //     }]
+    // })
+    // let body = JSON.stringify({
+    //     replyToken: reply_token,
+    //     messages: [{
+    //         type: 'text',
+    //         text: 'Hello'
+    //     },
+    //     {
+    //         type: 'text',
+    //         text: 'How are you?'
+    //     }]
+    // })
+    // request.get({
+    //     url: 'https://api.line.me/v2/bot/profile/',
+    //     headers: headers,
+    //     body: body
+    // }, (err, res, body, userId) => {
+    //     console.log(body)
+    // });
+
+
+
+
+
+
 
 
 

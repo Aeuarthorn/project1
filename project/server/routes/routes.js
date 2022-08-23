@@ -6,8 +6,8 @@ const { register, login, authens, webhook, applyloan, applyloanID} = require("..
 router.post('/register', register)
 router.post('/login', login)
 router.post('/authens', authens)
-router.post('/webhook', webhook)
 
+router.post('/webhook', webhook)
 router.get('/applyloan', applyloan)
 router.get('/applyloan/:id', applyloanID)
 
